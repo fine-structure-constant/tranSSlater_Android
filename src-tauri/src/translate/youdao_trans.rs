@@ -133,17 +133,16 @@ impl YoudaoTransClient {
         let to = to_youdao_lang(to)
             .ok_or_else(|| TranslateError::Invalid(format!("有道翻译不支持目标语言 {to}")))?;
 
-        let resp = self
+        let request = self
             .http
             .get(ENDPOINT)
-            .query(&[("q", text), ("from", from), ("to", to)])
-            .send()
-            .await?;
-        let status = resp.status().as_u16();
+            .query(&[("q", text), ("from", from), ("to", to)]);
+        let resp = super::transport::send(&self.http, request, true, false).await?;
+        let status = resp.status;
         if status != 200 {
             return Err(TranslateError::Status { status });
         }
-        let body: Value = resp.json().await?;
+        let body: Value = resp.json()?;
         validate_response(&body)?;
         Ok(body)
     }

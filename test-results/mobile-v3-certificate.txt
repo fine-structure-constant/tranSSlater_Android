@@ -1,0 +1,4 @@
+Signer #1 certificate DN: CN=tranSSlater Local, O=tranSSlater, C=CN
+Signer #1 certificate SHA-256 digest: 732270f7825452890dcd53712a025c0c461c8fe800772eca2f2f72594a4455de
+Signer #1 certificate SHA-1 digest: f12644420a5f1150cb426081035c58086521616e
+Signer #1 certificate MD5 digest: 562adb4faef187ef65760e35679b5764

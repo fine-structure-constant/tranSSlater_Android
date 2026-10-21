@@ -81,3 +81,9 @@ dependencies {
 }
 
 apply(from = file("tauri.build.gradle.kts"))
+
+tasks.withType<Test>().configureEach {
+    systemProperty("transslater.live", providers.gradleProperty("testNetworkLive").getOrElse("false"))
+    providers.gradleProperty("testProxyHost").orNull?.let { systemProperty("https.proxyHost", it) }
+    providers.gradleProperty("testProxyPort").orNull?.let { systemProperty("https.proxyPort", it) }
+}

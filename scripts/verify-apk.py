@@ -12,6 +12,8 @@ with zipfile.ZipFile(apk) as archive:
     assert archive.testzip() is None, 'APK ZIP integrity failed'
     dex = b''.join(archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
     assert b'Lcom/transslater/app/ExternalInputPlugin;' in dex, 'Release shrinking removed the native input plugin'
+    assert b'Lcom/transslater/app/TranslationNetworkPlugin;' in dex, 'Release shrinking removed the Android network plugin'
+    assert b'Lcom/transslater/app/TranslationRequest;' in dex, 'Release shrinking removed the Android network request model'
     libraries = [item for item in archive.infolist() if item.filename.endswith('.so')]
     assert libraries and all('/arm64-v8a/' in item.filename for item in libraries), 'Unexpected APK ABI'
     results = []
@@ -39,10 +41,12 @@ def inspect(*args):
     return subprocess.check_output([str(aapt), 'dump', *args], encoding='utf-8', errors='replace')
 badging = inspect('badging', str(apk))
 manifest = inspect('xmltree', str(apk), 'AndroidManifest.xml')
-assert "name='com.transslater.app' versionCode='2'" in badging, 'Incorrect application identity or upgrade version'
+app_config = json.loads((root / 'src-tauri/tauri.conf.json').read_text(encoding='utf-8-sig'))
+version_code = app_config['bundle']['android']['versionCode']
+assert f"name='com.transslater.app' versionCode='{version_code}'" in badging, 'Incorrect application identity or upgrade version'
 actions = ['android.intent.action.PROCESS_TEXT', 'android.intent.action.SEND', 'android.intent.action.VIEW']
 assert all(action in manifest for action in actions), 'An Android external input entry is missing'
 assert 'android.permission.SYSTEM_ALERT_WINDOW' not in manifest and 'android.permission.MANAGE_EXTERNAL_STORAGE' not in manifest
-report = {'apk': apk.name, 'bytes': apk.stat().st_size, 'sha256': hashlib.sha256(apk.read_bytes()).hexdigest(), 'abi': 'arm64-v8a', 'package': 'com.transslater.app', 'versionCode': 2, 'externalInputActions': actions, 'nativeInputPlugin': 'retained in release DEX', 'libraries': results, 'zipIntegrity': 'passed', 'nativePageAlignment': 'passed', 'deviceLaunch': 'not run: no device or emulator connected'}
+report = {'apk': apk.name, 'bytes': apk.stat().st_size, 'sha256': hashlib.sha256(apk.read_bytes()).hexdigest(), 'abi': 'arm64-v8a', 'package': 'com.transslater.app', 'versionCode': version_code, 'externalInputActions': actions, 'nativeInputPlugin': 'retained in release DEX', 'nativeNetworkPlugin': 'retained in release DEX', 'libraries': results, 'zipIntegrity': 'passed', 'nativePageAlignment': 'passed', 'deviceLaunch': 'not run: no device or emulator connected'}
 (root / 'artifacts/verification.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 print(json.dumps(report, ensure_ascii=False, indent=2))

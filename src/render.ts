@@ -118,6 +118,8 @@ export function renderResult(
       ? langName(r.sourceLang)
       : `${langName(r.sourceLang)} → ${langName(r.targetLang)}`;
   head.appendChild(el("span", "label", esc(srcLabel)));
+  const engineLabel = ({ google: "Google", youdao: "有道词典", youdaoTrans: "有道翻译" } as Record<string, string>)[r.engine] ?? r.engine;
+  head.appendChild(el("span", "label", esc(engineLabel)));
   if (r.cached) head.appendChild(el("span", "label", "缓存命中"));
   root.appendChild(head);
 

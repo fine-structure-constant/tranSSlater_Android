@@ -832,18 +832,17 @@ impl YoudaoDictClient {
     }
 
     async fn raw(&self, query: &str) -> Result<Value, TranslateError> {
-        let resp = self
+        let request = self
             .http
             .get(ENDPOINT)
             .query(&[("q", query), ("dicts", DICTS)])
-            .header("Referer", REFERER)
-            .send()
-            .await?;
-        let status = resp.status().as_u16();
+            .header("Referer", REFERER);
+        let resp = super::transport::send(&self.http, request, true, false).await?;
+        let status = resp.status;
         if status != 200 {
             return Err(TranslateError::Status { status });
         }
-        Ok(resp.json().await?)
+        resp.json()
     }
 }
 

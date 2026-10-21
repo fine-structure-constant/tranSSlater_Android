@@ -1,6 +1,8 @@
 # Add project specific ProGuard rules here.
 # Registered by class name from Rust; retain native command entry points in release.
 -keep class com.transslater.app.ExternalInputPlugin { *; }
+-keep class com.transslater.app.TranslationNetworkPlugin { *; }
+-keep class com.transslater.app.TranslationRequest { *; }
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #

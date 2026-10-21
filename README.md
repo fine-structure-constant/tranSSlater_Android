@@ -16,7 +16,17 @@
 
 Windows 鼠标钩子、悬浮图标与资源管理器右键菜单在 Android 上分别由选词菜单、系统分享和文本文件打开入口替代。窗口尺寸预设、最大化及 Windows PDF/UI Automation 修复属于桌面系统能力；Android 保留触屏、安全区和键盘适配，不调用桌面窗口 API。旧窗口设置字段仅用于兼容数据。
 
-本次已同步桌面提交 `7ba48f2` 的全部共享翻译和界面更新；礼炮与词典板块渲染也与桌面一致，Android 的文档导出和历史持久化测试保留。同步前源码备份位于 `test-results/before-desktop-sync.zip`。
+桌面同步基线为 `7ba48f2`。随后安卓版独立实现系统网络通道和手机导航布局；翻译路由、拼写候选、历史、导出与礼炮功能保留。此前源码备份位于 `test-results/before-desktop-sync.zip`，本次改动前备份位于 `test-results/before-mobile-polish.zip`。
+
+## 手机网络与界面（升级版本号 4）
+
+默认翻译请求改由 Android 系统的 `HttpURLConnection` 执行，使用手机系统 DNS、证书验证与当前网络/VPN，不再直接套用桌面 HTTP 网络通道。Rust 仍负责引擎分流、响应解析、缓存和历史。Google 的显式代理保留原有 HTTP/SOCKS/认证支持；代理留空时使用手机网络。有道不使用应用内的代理地址。Google 的实际可用性仍取决于手机能否访问该服务。
+
+版本 4 修正了有道在 Android 上被单独设置为 `Proxy.NO_PROXY` 的问题。Google 和有道现在均使用系统默认连接策略；不会把桌面“有道不使用应用内 Google 代理”的规则误扩展为绕过手机的系统策略。新增本地路由回归测试覆盖三个域名，并保留底层连接异常的类型、目标地址与原因，移除异常里的查询文本和 URL 凭据。用户已确认旧版 Google 可用、手机浏览器可直接读取有道 JSON；本次修复后的有道仍需手机覆盖安装确认。
+
+连接失败会显示域名解析、证书/手机日期、超时或系统联网权限等具体原因，并提供保留输入的重试操作。原来的“无法连接翻译服务”统一提示不再吞掉已知原因。保持 HTTPS 验证，不跳过证书或主机名校验；请求在后台线程执行，有连接与读取超时、响应大小限制。
+
+手机界面采用单行应用栏、翻译方向/引擎选择、明确的翻译按钮和翻译/历史/设置三处导航；宽屏使用侧栏与输入/结果双栏。设置和历史为可切换页面，Android 返回先关闭当前页面。键盘显示时避让 IME 并收起底部导航，打开应用、历史和设置均不强制弹出键盘。输入有字符计数；错误重试不清空草稿；两套皮肤、字号、词典板块与全量导出继续可用。
 
 ## 外部选词与文件
 
@@ -68,7 +78,7 @@ SQLite `history.db` 和 `settings.json` 位于 Android 应用私有目录，实�
 
 `app-icon.png` 是 1024px 母版：深底、A／文字形与蓝、橄榄、金、橙四段彩虹条。Android 启动器使用安全区内的前景、纯色背景及圆形资源，生成 Gradle 工程后脚本自动同步图标。
 
-`src/mobile.css` 提供安全区、动态视口、44px 触控区域、窄屏菜单、历史抽屉和设置布局。设计及验证记录见 `design/index.html`。
+`src/mobile.css` 提供安全区、动态视口、48px 触控区域、窄屏菜单、历史抽屉和设置布局。设计及验证记录见 `design/index.html`。
 
 ## 验证
 
@@ -76,12 +86,14 @@ SQLite `history.db` 和 `settings.json` 位于 Android 应用私有目录，实�
 npm run build
 npm run test:rust
 npm run test:native
+# 使用相同 Kotlin 网络实现连接三个真实服务（在 JVM 上运行，不代替真机）：
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/android.ps1 -Action native-test -LiveNetwork
 # 先运行 npm run dev -- --port 1426，再在另一终端执行：
 npm run test:ui
 # 真实有道接口检查：
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/android.ps1 -Action smoke -TestFilter live_youdao_spelling_suggestions
 ```
 
-本工程 `scripts/test-ui.mjs` 使用 Edge Chromium 触屏模拟与本地 IPC 测试数据，覆盖 320px、390px、横屏与平板视口，以及最大字号、候选词点选、冷/热启动外部输入、重复信号、失败保留输入、历史分页与全量导出。它验证布局和前端交互，不替代实际 Android 设备验证。原生 JVM 测试覆盖文本编码、大小限制、二进制拒绝和 Unicode 截断；Rust 历史测试验证 1,205 条记录在关闭并重开数据库后完整保留，并可全量遍历导出。
+本工程 `scripts/test-ui.mjs` 使用 Edge Chromium 触屏模拟与本地 IPC 测试数据，覆盖 320px、390px、横屏与平板视口，以及最大字号、候选词点选、冷/热启动外部输入、重复信号、失败保留输入、历史分页与全量导出。它验证布局和前端交互，不替代实际 Android 设备验证。原生 JVM 测试覆盖文本编码、大小限制、二进制拒绝、Unicode 截断、真实 HTTP 请求/压缩/状态码、网络错误分类；`-LiveNetwork` 额外连接 Google、有道词典及有道翻译服务。Rust 历史测试验证 1,205 条记录在关闭并重开数据库后完整保留，并可全量遍历导出。
 
 Google 在大陆通常需要代理，有道引擎支持直连。引擎仍使用原项目的公开接口。

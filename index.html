@@ -23,12 +23,9 @@
 
       <!-- ── 菜单栏 ───────────────────────────────────────── -->
       <header class="chrome">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-          <span class="brand-name">tranSSlater</span>
-        </div>
-
-        <nav class="menubar" id="menubar" role="menubar" aria-label="主菜单">
+        <div class="brand"><span class="mobile-brand-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="brand-name">tranSSlater</span></div>
+        <button id="btn-help" class="icon-btn" title="使用说明" aria-label="使用说明"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1-1.5 2m0 3h.01"/></svg></button>
+      </header><nav class="menubar" hidden id="menubar" role="menubar" aria-label="主菜单">
           <div class="menu">
             <button class="menu-btn" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">
               文件
@@ -129,36 +126,13 @@
           </div>
         </nav>
 
-        <div class="chrome-right">
-          <span id="status" class="status" role="status" aria-live="polite"></span>
-          <button id="btn-clear-cache" class="ghost-btn" title="清空内存缓存">
-            缓存 <span id="cache-size">0</span>
-          </button>
-          <button id="btn-history" class="ghost-btn" title="翻译历史 (Ctrl+H)">
-            历史 <span id="history-count">0</span>
-          </button>
-          <button id="btn-celebrate" class="ghost-btn celebration-button" type="button" title="把查过的单词放成礼炮" aria-label="单词礼炮">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="m4 20 4-12 8 8-12 4Z" />
-              <path d="m7 11 6 6M13 3l1 3M18 7l3-1M17 12l3 1M10 5l1-2M17 3l-1 4" />
-              <circle cx="20" cy="3" r=".6" fill="currentColor" stroke="none" />
-            </svg>
-            <span>礼炮</span>
-          </button>
-          <button id="btn-settings" class="icon-btn" title="设置">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.1 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7h-.3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 1-1.5v-.3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1h.3a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
       <!-- ── 语言与引擎 ───────────────────────────────────── -->
+      <!-- ── 主体 ─────────────────────────────────────────── -->
+      <main class="content" id="content">
       <div class="toolbar">
-        <div class="select-wrap">
+        <div class="select-wrap"><label for="lang-pair">翻译方向</label>
           <select id="lang-pair" class="lang-pair" title="选择语言对">
-            <option value="auto|zh-CN">自动中英互译</option>
+            <option value="auto|zh-CN">自动互译</option>
             <option value="en|zh-CN">英语 → 中文</option>
             <option value="zh-CN|en">中文 → 英语</option>
             <option value="en|en">英语 → 英语</option>
@@ -185,15 +159,15 @@
           </svg>
         </button>
 
-        <div class="select-wrap">
+        <div class="select-wrap"><label for="engine">翻译引擎</label>
           <select id="engine" class="engine-pick" title="有道系自动分流：单词查词典，句段用翻译"></select>
           <span class="caret">▾</span>
         </div>
       </div>
 
-      <!-- ── 主体 ─────────────────────────────────────────── -->
-      <main class="content" id="content">
-        <section class="query-card">
+
+        <section class="query-card" aria-label="原文输入">
+          <div class="query-label"><span>原文</span><span id="input-count">0 / 5000</span></div>
           <textarea
             id="input"
             aria-label="要翻译的原文"
@@ -202,52 +176,51 @@
             rows="1"
             spellcheck="false"
             autocomplete="off"
-            placeholder="输入或粘贴要翻译的内容…"
+            placeholder="输入单词或一段文字…"
           ></textarea>
 
           <div class="query-foot">
             <div class="query-meta" id="query-meta"></div>
             <div class="query-actions">
-              <button data-act="speak" class="icon-btn sm" title="朗读原文">
+              <button data-act="speak" class="icon-btn sm" title="朗读原文" aria-label="朗读原文">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 5 6.5 8.8H3v6.4h3.5L11 19V5z" />
                   <path d="M15.2 9.2a4 4 0 0 1 0 5.6" />
                   <path d="M18 6.4a8 8 0 0 1 0 11.2" />
                 </svg>
               </button>
-              <button data-act="copy" class="icon-btn sm" title="复制译文">
+              <button data-act="copy" class="icon-btn sm" title="复制译文" aria-label="复制译文">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="12" height="12" rx="2.2" />
                   <path d="M5.5 15H5a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 5 3.5h8.5A1.5 1.5 0 0 1 15 5v.5" />
                 </svg>
               </button>
-              <button data-act="clear" class="icon-btn sm" title="清空">
+              <button data-act="clear" class="icon-btn sm" title="清空" aria-label="清空">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
               </button>
-              <button data-act="go" class="icon-btn sm" title="翻译 (Ctrl+Enter)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="6.8" />
-                  <path d="m20.2 20.2-4-4" />
-                </svg>
-              </button>
+              <button data-act="go" class="translate-button" type="button" title="翻译 (Ctrl+Enter)"><span>翻译</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15m-5-5 5 5-5 5"/></svg></button>
             </div>
           </div>
         </section>
 
-        <div class="alert" id="alert" role="alert" hidden></div>
+        <section class="alert" id="alert" role="alert" hidden></section>
+        <div class="translation-status"><span id="status" class="status" role="status" aria-live="polite"></span></div>
 
         <section class="result" id="result" hidden></section>
 
         <section class="empty" id="empty">
-          <div class="empty-title">tranSSlater</div>
-          <div class="empty-keys">
-            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 翻译 · <kbd>Esc</kbd> 清空 ·
-            <kbd>Ctrl</kbd> + <kbd>H</kbd> 历史 · <kbd>F1</kbd> 说明
-          </div>
+          <div class="empty-title">从一个词开始</div>
+          <p>输入或粘贴文字，也可以从其他应用分享过来。</p>
+          <div class="example-queries"><button type="button" data-query="serendipity">serendipity <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button><button type="button" data-query="你好，世界">你好，世界 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></div>
         </section>
       </main>
+<nav class="mobile-nav" aria-label="主要功能">
+        <button id="btn-home" type="button" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 5 7 0m-3-2v2c0 7-5 10-5 10m2-7c1 4 4 7 7 8m1 5 4-12 4 12m-6-4h4"/></svg><span>翻译</span></button>
+        <button id="btn-history" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6m3-3v5l3 2"/></svg><span>历史 <span id="history-count" class="nav-count">0</span></span></button>
+        <button id="btn-settings" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3h6l1-3 3-1-1-3 2-2-2-2 1-3-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg><span>设置</span></button>
+      </nav>
     </div>
 
     <!-- ── 历史抽屉 ───────────────────────────────────────── -->
@@ -285,7 +258,7 @@
 
     <!-- ── 设置 ──────────────────────────────────────────── -->
     <div class="mask" id="mask" hidden>
-      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="dialog" role="region" aria-labelledby="settings-title">
         <div class="dialog-head">
           <h2 id="settings-title">设置</h2>
           <button id="btn-close-settings" class="icon-btn" title="关闭">
@@ -314,14 +287,16 @@
 
 
           <div class="field">
-            <label for="proxy">代理地址</label>
+            <label for="proxy">Google 代理（可选）</label>
             <input
               id="proxy"
               type="text"
-              placeholder="http://127.0.0.1:7890  或  socks5://127.0.0.1:1080"
+              placeholder="留空使用手机当前网络或 VPN"
+              inputmode="url" autocomplete="off" autocapitalize="off"
             />
           </div>
 
+          <p class="field-hint">有道可直连；Google 通常需要手机 VPN。127.0.0.1 指这部手机，不是电脑。</p>
           <div class="field">
             <label class="row-label">
               <input id="auto-translate" type="checkbox" checked />
@@ -342,6 +317,16 @@
               <span>记录翻译历史</span>
             </label>
           </div>
+          <div class="settings-utilities"><h3>学习与数据</h3><button id="btn-celebrate" class="ghost-btn celebration-button" type="button" title="把查过的单词放成礼炮" aria-label="单词礼炮">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m4 20 4-12 8 8-12 4Z" />
+              <path d="m7 11 6 6M13 3l1 3M18 7l3-1M17 12l3 1M10 5l1-2M17 3l-1 4" />
+              <circle cx="20" cy="3" r=".6" fill="currentColor" stroke="none" />
+            </svg>
+            <span>礼炮</span>
+          </button><button id="btn-clear-cache" class="ghost-btn" title="清空内存缓存">
+            缓存 <span id="cache-size">0</span>
+          </button></div>
         </div>
 
         <div class="dialog-foot">

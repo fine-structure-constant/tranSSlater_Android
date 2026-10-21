@@ -9,6 +9,9 @@ pub enum TranslateError {
     #[error("网络请求失败：{0}")]
     Http(#[from] reqwest::Error),
 
+    #[error("网络请求失败：{0}")]
+    Network(String),
+
     #[error("URL 构造失败：{0}")]
     Url(#[from] url::ParseError),
 
@@ -18,7 +21,7 @@ pub enum TranslateError {
     #[error("Google 接口限流（HTTP 429），重试 {attempts} 次后仍失败")]
     RateLimited { attempts: u32 },
 
-    #[error("Google 接口返回异常状态：HTTP {status}")]
+    #[error("翻译服务返回异常状态：HTTP {status}")]
     Status { status: u16 },
 
     #[error("待翻译文本为空")]

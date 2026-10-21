@@ -77,6 +77,34 @@ const historyMore = $<HTMLButtonElement>("btn-history-more");
 const menubar = $("menubar");
 const menus = Array.from(menubar.querySelectorAll<HTMLElement>(".menu"));
 
+function syncNavigation(page: "home" | "history" | "settings"): void {
+  for (const button of document.querySelectorAll<HTMLButtonElement>(".mobile-nav button")) {
+    if (button.id === `btn-${page}`) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  }
+}
+
+$("btn-home").addEventListener("click", () => {
+  if (saving) return;
+  mask.hidden = true;
+  helpMask.hidden = true;
+  drawer.hidden = true;
+  drawerMask.hidden = true;
+  syncNavigation("home");
+});
+$("btn-help").addEventListener("click", () => openHelp("all"));
+for (const button of document.querySelectorAll<HTMLButtonElement>("[data-query]")) {
+  button.addEventListener("click", () => queryAgain(button.dataset.query!));
+}
+
+// Native Android Back dismisses the current surface before leaving the app.
+(window as Window & { __transslaterBack?: () => boolean }).__transslaterBack = () => {
+  if (!helpMask.hidden) { closeHelp(); return true; }
+  if (!mask.hidden) { closeSettings(); return true; }
+  if (!drawer.hidden) { closeHistory(); return true; }
+  return false;
+};
+
 attachWordConfetti($<HTMLButtonElement>("btn-celebrate"), historyCelebrationWords);
 
 // ── 设置与运行时状态 ────────────────────────────────────────
@@ -220,7 +248,7 @@ async function run(text: string): Promise<void> {
     result.replaceChildren();
     result.hidden = true;
     setStatus("");
-    showAlert(explainError(err));
+    showAlert(explainError(err), errorDetail(err), true);
   } finally {
     if (my === seq) setLoading(false);
   }
@@ -267,7 +295,8 @@ function reset(): void {
 
 function autoGrow(): void {
   input.style.height = "auto";
-  const max = window.innerHeight * 0.34;
+  $("input-count").textContent = `${[...input.value].length} / 5000`;
+  const max = Math.max(100, window.innerHeight * 0.34);
   input.style.height = `${Math.min(input.scrollHeight, max)}px`;
 }
 
@@ -397,6 +426,9 @@ function setStatus(text: string, busy = false): void {
 }
 
 function setLoading(on: boolean): void {
+  const go = document.querySelector<HTMLButtonElement>('[data-act="go"]')!;
+  go.disabled = on;
+  go.querySelector("span")!.textContent = on ? "翻译中" : "翻译";
   result.setAttribute("aria-busy", String(on));
   if (on && !current) {
     result.hidden = false;
@@ -408,8 +440,27 @@ function setLoading(on: boolean): void {
   result.classList.toggle("loading", on);
 }
 
-function showAlert(msg: string): void {
-  alertBox.textContent = msg;
+function showAlert(msg: string, detail?: string, retry = false): void {
+  alertBox.replaceChildren();
+  const text = document.createElement("p");
+  text.textContent = msg;
+  alertBox.appendChild(text);
+  if (retry) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "重试";
+    button.addEventListener("click", () => void run(input.value));
+    alertBox.appendChild(button);
+  }
+  if (detail && !detail.includes(msg)) {
+    const more = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "错误详情";
+    const body = document.createElement("div");
+    body.textContent = detail;
+    more.append(summary, body);
+    alertBox.appendChild(more);
+  }
   alertBox.hidden = false;
 }
 
@@ -421,6 +472,10 @@ function hideAlert(): void {
 function explainError(err: unknown): string {
   const s = typeof err === "string" ? err : String(err);
 
+  if (s.startsWith("网络请求失败：") && /无法解析|安全连接|超时|联网|网络通道|访问 .* 失败/.test(s)) {
+    return s.replace(/^网络请求失败：/, "");
+  }
+
   if (s.includes("429") || s.includes("限流")) {
     return "Google 接口限流（HTTP 429），多次重试仍未成功。稍等片刻再试，或换用有道的两个引擎（国内直连）。";
   }
@@ -430,9 +485,15 @@ function explainError(err: unknown): string {
     s.includes("timed out") ||
     s.includes("网络请求失败")
   ) {
-    return "无法连接翻译服务。Google 需要代理，请到设置里填写；有道的两个引擎不需要代理，可直接切换。";
+    return "连接未完成。请确认系统允许应用联网后重试；使用 Google 时还需可访问该服务的手机网络或 VPN。";
   }
   return s;
+}
+
+function errorDetail(error: unknown): string {
+  return String(error).replace(/https?:\/\/[^\s)]+/g, (value) => {
+    try { return new URL(value).origin; } catch { return "翻译服务"; }
+  });
 }
 
 /** 渲染查询词条下方的音标 / 拼音 / 语言标签。 */
@@ -553,19 +614,24 @@ $("btn-clear-cache").addEventListener("click", async () => {
 // ── 历史抽屉 ────────────────────────────────────────────────
 
 async function openHistory(): Promise<void> {
+  if (saving) return;
+  mask.hidden = true;
+  helpMask.hidden = true;
+  syncNavigation("history");
   drawer.hidden = false;
   drawerMask.hidden = false;
   historySearch.value = historyFilter;
   // 先取体积再取列表：反过来列表的条数会被统计行覆盖掉。
   await refreshHistoryStat();
   await loadHistory(true);
-  historySearch.focus();
+  $("btn-close-history").focus();
 }
 
 function closeHistory(): void {
   drawer.hidden = true;
   drawerMask.hidden = true;
   $("btn-history").focus();
+  syncNavigation("home");
 }
 
 $("btn-history").addEventListener("click", openHistory);
@@ -829,6 +895,11 @@ function fillSettingsOptions(): void {
 
 
 function openSettings(): void {
+  if (!mask.hidden) return;
+  drawer.hidden = true;
+  drawerMask.hidden = true;
+  helpMask.hidden = true;
+  syncNavigation("settings");
   proxyInput.value = settings.proxy;
   autoTranslateInput.checked = settings.autoTranslate;
   autoSpeakInput.checked = settings.autoSpeak;
@@ -839,13 +910,14 @@ function openSettings(): void {
   settingsMsg.textContent = "";
   settingsMsg.style.color = "";
   mask.hidden = false;
-  proxyInput.focus();
+  $("btn-close-settings").focus();
 }
 
 function closeSettings(): void {
   if (saving) return;
   mask.hidden = true;
   $("btn-settings").focus();
+  syncNavigation("home");
 }
 
 $("btn-settings").addEventListener("click", openSettings);
@@ -1003,9 +1075,7 @@ function openHelp(section: string): void {
 
 function closeHelp(): void {
   helpMask.hidden = true;
-  const last = menus[menus.length - 1];
-  const button = last?.querySelector<HTMLButtonElement>(".menu-btn");
-  (button ?? $("btn-settings")).focus();
+  $("btn-help").focus();
 }
 
 $("btn-close-help").addEventListener("click", closeHelp);
@@ -1313,8 +1383,6 @@ async function boot(): Promise<void> {
   langPair.disabled = false;
   enginePick.disabled = false;
   autoGrow();
-  input.focus();
-
   if (!isTauri()) showAlert("浏览器预览模式。请在打包后的应用里使用真实翻译。");
   void refreshCache();
   void refreshHistoryStat();
@@ -1334,9 +1402,11 @@ async function receiveExternalInput(): Promise<void> {
     if (!text) return;
     window.clearTimeout(debounceTimer);
     seq++;
-    closeSettings();
-    closeHelp();
-    closeHistory();
+    mask.hidden = true;
+    helpMask.hidden = true;
+    drawer.hidden = true;
+    drawerMask.hidden = true;
+    syncNavigation("home");
     menuCloseAll();
     input.value = text;
     autoGrow();

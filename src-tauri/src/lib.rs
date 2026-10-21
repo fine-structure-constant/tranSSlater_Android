@@ -333,6 +333,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(external_input::init())
+        .plugin(translate::transport::init())
         .setup(|app| {
             let handle = app.handle().clone();
             let (state, _loaded) = AppState::new(&handle)?;

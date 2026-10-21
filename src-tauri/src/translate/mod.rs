@@ -6,6 +6,7 @@ pub mod error;
 pub mod google;
 pub mod model;
 pub mod routing;
+pub mod transport;
 pub mod youdao;
 pub mod youdao_trans;
 

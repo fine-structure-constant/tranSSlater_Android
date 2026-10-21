@@ -3,6 +3,7 @@ param(
     [string]$Action = 'build',
     [string[]]$Target = @('aarch64'),
     [string]$TestFilter = '',
+    [switch]$LiveNetwork,
     [switch]$Debug
 )
 $ErrorActionPreference = 'Stop'
@@ -64,8 +65,16 @@ try {
             & cargo @testArgs -- --ignored --nocapture --test-threads=1
         }
         'native-test' {
+            $nativeOptions = @()
+            if ($LiveNetwork) {
+                $nativeOptions += '-PtestNetworkLive=true'
+                if ($config.gradleProxyHost -and $config.gradleProxyPort) {
+                    $nativeOptions += "-PtestProxyHost=$($config.gradleProxyHost)"
+                    $nativeOptions += "-PtestProxyPort=$($config.gradleProxyPort)"
+                }
+            }
             Push-Location 'src-tauri/gen/android'
-            try { & .\gradlew.bat @gradleOptions testArm64DebugUnitTest -x :app:rustBuildArm64Debug -PabiList=arm64-v8a -ParchList=arm64 -PtargetList=aarch64 }
+            try { & .\gradlew.bat @gradleOptions @nativeOptions testArm64DebugUnitTest -x :app:rustBuildArm64Debug -PabiList=arm64-v8a -ParchList=arm64 -PtargetList=aarch64 }
             finally { Pop-Location }
         }
         'check' { & cargo check --manifest-path src-tauri/Cargo.toml }
@@ -81,6 +90,10 @@ try {
             finally { Pop-Location }
         }
         'package' {
+            # Native-only updates reuse the Rust library and refresh APK metadata.
+            $appConfig = Get-Content 'src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json
+            $properties = "tauri.android.versionName=$($appConfig.version)`ntauri.android.versionCode=$($appConfig.bundle.android.versionCode)`n"
+            [IO.File]::WriteAllText((Join-Path $projectRoot 'src-tauri/gen/android/app/tauri.properties'), $properties)
             $jniDir = 'src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a'
             New-Item -ItemType Directory -Force -Path $jniDir | Out-Null
             Copy-Item -LiteralPath (Join-Path $env:CARGO_TARGET_DIR 'aarch64-linux-android/release/libtransslater_lib.so') -Destination $jniDir -Force

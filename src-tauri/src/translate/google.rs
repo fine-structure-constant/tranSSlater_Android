@@ -49,6 +49,7 @@ const BACKOFF_MS: [u64; 4] = [0, 1000, 2000, 4000];
 
 pub struct GoogleClient {
     http: reqwest::Client,
+    explicit_proxy: bool,
 }
 
 impl GoogleClient {
@@ -70,6 +71,7 @@ impl GoogleClient {
         }
         Ok(Self {
             http: builder.build()?,
+            explicit_proxy: proxy.is_some_and(|value| !value.trim().is_empty()),
         })
     }
 
@@ -115,11 +117,11 @@ impl GoogleClient {
             if delay > 0 {
                 tokio::time::sleep(Duration::from_millis(delay)).await;
             }
-            let resp = self.http.get(url.clone()).send().await?;
-            let status = resp.status().as_u16();
+            let resp = super::transport::send(&self.http, self.http.get(url.clone()), false, self.explicit_proxy).await?;
+            let status = resp.status;
             match status {
                 200 => {
-                    let raw: Value = resp.json().await?;
+                    let raw: Value = resp.json()?;
                     let mut result = parse(&raw, text, to)?;
                     result.elapsed_ms = started.elapsed().as_millis() as u64;
                     return Ok(result);
