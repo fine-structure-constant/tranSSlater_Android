@@ -33,7 +33,7 @@
     ],
     "android": {
       "minSdkVersion": 24,
-      "versionCode": 4
+      "versionCode": 5
     }
   }
 }
